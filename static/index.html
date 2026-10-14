@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ── RESET & BASE ──────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary:    #06070d;
+            --bg-secondary:  #0c0e1a;
+            --bg-card:       #111427;
+            --bg-card-hover: #161935;
+            --border:        #1e2240;
+            --border-light:  #2a2f52;
+            --text-primary:  #f0f2f8;
+            --text-secondary:#8b8fa7;
+            --text-muted:    #5c6080;
+            --accent:        #6366f1;
+            --accent-light:  #818cf8;
+            --green:         #22c55e;
+            --green-bg:      rgba(34,197,94,.08);
+            --red:           #ef4444;
+            --red-bg:        rgba(239,68,68,.08);
+            --yellow:        #eab308;
+            --yellow-bg:     rgba(234,179,8,.08);
+            --orange:        #f97316;
+            --radius:        12px;
+            --radius-lg:     16px;
+            --radius-sm:     8px;
+            --shadow:        0 4px 24px rgba(0,0,0,.35);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── AMBIENT GLOW ──────────────────────────────────────── */
+        .ambient {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 20% 10%, rgba(99,102,241,.07) 0%, transparent 70%),
+                radial-gradient(ellipse 500px 350px at 80% 20%, rgba(139,92,246,.05) 0%, transparent 70%);
+        }
+
+        /* ── LAYOUT ────────────────────────────────────────────── */
+        .container {
+            position: relative; z-index: 1;
+            max-width: 1080px; margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ── NAV ───────────────────────────────────────────────── */
+        nav {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 0; border-bottom: 1px solid var(--border);
+        }
+        .logo {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 700; font-size: 1.05rem; letter-spacing: -.02em;
+        }
+        .logo-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            display: grid; place-items: center;
+        }
+        .logo-icon svg { width: 18px; height: 18px; }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none; font-size: .85rem;
+            padding: 6px 14px; border-radius: var(--radius-sm);
+            transition: .2s;
+        }
+        .nav-links a:hover { color: var(--text-primary); background: var(--bg-card); }
+
+        /* ── HERO ──────────────────────────────────────────────── */
+        .hero {
+            text-align: center; padding: 72px 0 48px;
+        }
+        .hero h1 {
+            font-size: 2.75rem; font-weight: 800; letter-spacing: -.04em;
+            line-height: 1.15;
+            background: linear-gradient(135deg, #fff 30%, var(--accent-light));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            color: var(--text-secondary); font-size: 1.08rem; margin-top: 14px;
+            max-width: 520px; margin-inline: auto; line-height: 1.6;
+        }
+
+        /* ── SEARCH ────────────────────────────────────────────── */
+        .search-box {
+            display: flex; align-items: center; gap: 0;
+            max-width: 540px; margin: 36px auto 0;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; overflow: hidden;
+            transition: border-color .25s, box-shadow .25s;
+        }
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+        }
+        .search-box input {
+            flex: 1; border: none; outline: none; background: transparent;
+            color: var(--text-primary); font-family: inherit;
+            font-size: 1rem; padding: 16px 20px;
+        }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .search-box button {
+            border: none; cursor: pointer; font-family: inherit;
+            font-weight: 600; font-size: .9rem; color: #fff;
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            padding: 12px 28px; margin: 6px 6px 6px 0;
+            border-radius: 10px; transition: opacity .2s, transform .1s;
+            white-space: nowrap;
+        }
+        .search-box button:hover { opacity: .9; }
+        .search-box button:active { transform: scale(.97); }
+        .search-box button:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ── LOADING ───────────────────────────────────────────── */
+        .loader-wrap {
+            display: none; justify-content: center; padding: 64px 0 32px;
+        }
+        .loader-wrap.active { display: flex; }
+        .loader {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── ERROR ─────────────────────────────────────────────── */
+        .error-banner {
+            display: none; max-width: 540px; margin: 20px auto 0;
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            background: var(--red-bg); border: 1px solid rgba(239,68,68,.2);
+            color: var(--red); font-size: .9rem; text-align: center;
+        }
+        .error-banner.active { display: block; }
+
+        /* ── RESULTS ───────────────────────────────────────────── */
+        #results { display: none; }
+        #results.active { display: block; }
+
+        .section-label {
+            font-size: .75rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: .08em; color: var(--text-muted); margin-bottom: 14px;
+        }
+
+        /* ── METRIC CARDS ──────────────────────────────────────── */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px; margin-bottom: 40px;
+        }
+        @media (max-width: 800px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .metrics { grid-template-columns: 1fr; } }
+
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 24px;
+            transition: border-color .25s, transform .2s;
+        }
+        .card:hover { border-color: var(--border-light); transform: translateY(-2px); }
+        .card-label {
+            font-size: .78rem; color: var(--text-muted); font-weight: 500;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+        }
+        .card-label .dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+        .card-value {
+            font-size: 1.75rem; font-weight: 700; letter-spacing: -.03em;
+            line-height: 1.2;
+        }
+        .card-sub {
+            font-size: .82rem; color: var(--text-secondary); margin-top: 6px;
+        }
+
+        /* ── GRADE COLORS ──────────────────────────────────────── */
+        .grade-a  { color: var(--green); }
+        .grade-b  { color: #22d3ee; }
+        .grade-c  { color: var(--yellow); }
+        .grade-d  { color: var(--orange); }
+        .grade-f  { color: var(--red); }
+
+        /* ── TABS ──────────────────────────────────────────────── */
+        .tabs-section { margin-bottom: 64px; }
+        .tabs-nav {
+            display: flex; gap: 4px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0;
+        }
+        .tab-btn {
+            border: none; outline: none; background: transparent; cursor: pointer;
+            font-family: inherit; font-size: .88rem; font-weight: 500;
+            color: var(--text-muted); padding: 12px 20px;
+            border-bottom: 2px solid transparent;
+            transition: .2s;
+        }
+        .tab-btn:hover { color: var(--text-secondary); }
+        .tab-btn.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-panel {
+            display: none;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            padding: 24px;
+            animation: fadeIn .3s;
+        }
+        .tab-panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+        /* ── TABLE ─────────────────────────────────────────────── */
+        .header-table {
+            width: 100%; border-collapse: collapse; font-size: .88rem;
+        }
+        .header-table th {
+            text-align: left; font-weight: 600; color: var(--text-muted);
+            font-size: .75rem; text-transform: uppercase; letter-spacing: .06em;
+            padding: 10px 14px; border-bottom: 1px solid var(--border);
+        }
+        .header-table td {
+            padding: 14px; border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        .header-table tr:last-child td { border-bottom: none; }
+        .header-table .mono {
+            font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+            word-break: break-all;
+        }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .78rem; font-weight: 600; padding: 4px 10px;
+            border-radius: 6px;
+        }
+        .badge-ok   { background: var(--green-bg); color: var(--green); }
+        .badge-fail { background: var(--red-bg); color: var(--red); }
+
+        /* ── CODE BLOCK ────────────────────────────────────────── */
+        .code-block {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 20px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace; font-size: .8rem;
+            line-height: 1.65; color: var(--text-secondary);
+            max-height: 520px; overflow-y: auto;
+        }
+        .code-block::-webkit-scrollbar { width: 6px; height: 6px; }
+        .code-block::-webkit-scrollbar-track { background: transparent; }
+        .code-block::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .tls-badges {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+        }
+        .tls-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            font-size: .82rem; color: var(--text-secondary);
+        }
+        .tls-badge strong { color: var(--text-primary); font-weight: 600; }
+
+        /* ── FOOTER ────────────────────────────────────────────── */
+        footer {
+            text-align: center; padding: 32px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted); font-size: .8rem;
+        }
+        footer a { color: var(--accent-light); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="ambient"></div>
+
+    <div class="container">
+        <!-- NAV -->
+        <nav>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598
+                                 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623
+                                 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152
+                                 c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+                    </svg>
+                </div>
+                Security Dashboard
+            </div>
+            <div class="nav-links">
+                <a href="/docs" target="_blank">API Docs</a>
+                <a href="/redoc" target="_blank">ReDoc</a>
+            </div>
+        </nav>
+
+        <!-- HERO -->
+        <section class="hero">
+            <h1>Security Dashboard</h1>
+            <p>Domain adresinin SSL sertifikasini ve HTTP guvenlik basliklarini saniyeler icinde analiz edin.</p>
+            <div class="search-box">
+                <input type="text" id="domainInput" placeholder="ornek: google.com" autofocus
+                       spellcheck="false" autocomplete="off">
+                <button id="analyzeBtn" onclick="analyze()">Analiz Et</button>
+            </div>
+            <div class="error-banner" id="errorBanner"></div>
+        </section>
+
+        <!-- LOADING -->
+        <div class="loader-wrap" id="loader"><div class="loader"></div></div>
+
+        <!-- RESULTS -->
+        <section id="results">
+            <!-- Metrics -->
+            <p class="section-label">Ozet Metrikler</p>
+            <div class="metrics">
+                <!-- 1 – Security Score -->
+                <div class="card">
+                    <div class="card-label"><span class="dot" id="scoreDot"></span>Guvenlik Skoru</div>
+                    <div class="card-value" id="scoreValue">--</div>
+                    <div class="card-sub" id="scoreSub"></div>
+                </div>
+                <!-- 2 – SSL Status -->
+                <div class="card">
+                    <div class="card-label"><span class="dot" id="sslDot"></span>SSL Durumu</div>
+                    <div class="card-value" id="sslValue">--</div>
+                    <div class="card-sub" id="sslSub"></div>
+                </div>
+                <!-- 3 – Issuer -->
+                <div class="card">
+                    <div class="card-label"><span class="dot" style="background:var(--accent);"></span>Yayinlayan Kurum</div>
+                    <div class="card-value" style="font-size:1.15rem;" id="issuerValue">--</div>
+                    <div class="card-sub" id="issuerSub"></div>
+                </div>
+                <!-- 4 – Headers Present -->
+                <div class="card">
+                    <div class="card-label"><span class="dot" id="headerDot"></span>Guvenlik Basliklari</div>
+                    <div class="card-value" id="headersValue">--</div>
+                    <div class="card-sub" id="headersSub">Mevcut / Toplam</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs-section">
+                <p class="section-label">Detayli Rapor</p>
+                <div class="tabs-nav">
+                    <button class="tab-btn active" onclick="switchTab('headers')">Guvenlik Basliklari</button>
+                    <button class="tab-btn" onclick="switchTab('cert')">Ham Sertifika &amp; JSON</button>
+                </div>
+                <!-- Tab 1 – Headers -->
+                <div class="tab-panel active" id="tab-headers">
+                    <table class="header-table" id="headersTable">
+                        <thead>
+                            <tr>
+                                <th>Baslik</th>
+                                <th>Durum</th>
+                                <th>Deger</th>
+                                <th>Agirlik</th>
+                            </tr>
+                        </thead>
+                        <tbody id="headersBody"></tbody>
+                    </table>
+                </div>
+                <!-- Tab 2 – Raw Cert -->
+                <div class="tab-panel" id="tab-cert">
+                    <div class="tls-badges" id="tlsBadges"></div>
+                    <div class="code-block" id="rawJson"></div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            Domain Guvenlik Analiz API &middot; FastAPI + Vanilla JS &middot;
+            <a href="/docs" target="_blank">Swagger UI</a>
+        </footer>
+    </div>
+
+    <script>
+        /* ── HELPERS ───────────────────────────────────────────── */
+        const $ = id => document.getElementById(id);
+
+        function gradeClass(grade) {
+            if (grade.startsWith('A')) return 'grade-a';
+            if (grade === 'B') return 'grade-b';
+            if (grade === 'C') return 'grade-c';
+            if (grade === 'D') return 'grade-d';
+            return 'grade-f';
+        }
+
+        function gradeColor(grade) {
+            const map = {
+                'A+':'#22c55e','A':'#22c55e','B':'#22d3ee',
+                'C':'#eab308','D':'#f97316','F':'#ef4444'
+            };
+            return map[grade] || '#8b8fa7';
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            $('tab-' + name).classList.add('active');
+        }
+
+        /* ── ENTER KEY ─────────────────────────────────────────── */
+        $('domainInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') analyze();
+        });
+
+        /* ── MAIN ANALYZE ──────────────────────────────────────── */
+        async function analyze() {
+            const domain = $('domainInput').value.trim();
+            if (!domain) return;
+
+            /* UI state */
+            $('results').classList.remove('active');
+            $('errorBanner').classList.remove('active');
+            $('loader').classList.add('active');
+            $('analyzeBtn').disabled = true;
+
+            try {
+                const resp = await fetch(`/api/analyze?domain=${encodeURIComponent(domain)}`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || `HTTP ${resp.status}`);
+                }
+                const data = await resp.json();
+                render(data);
+            } catch (err) {
+                $('errorBanner').textContent = err.message;
+                $('errorBanner').classList.add('active');
+            } finally {
+                $('loader').classList.remove('active');
+                $('analyzeBtn').disabled = false;
+            }
+        }
+
+        /* ── RENDER ────────────────────────────────────────────── */
+        function render(data) {
+            const ssl  = data.ssl_analysis;
+            const hdrs = data.headers_analysis;
+            const hasSSL  = ssl  && !ssl.error;
+            const hasHdrs = hdrs && !hdrs.error;
+
+            /* — Card 1: Score & Grade — */
+            if (hasHdrs) {
+                const s = hdrs.summary;
+                const gc = gradeClass(s.grade);
+                $('scoreValue').innerHTML =
+                    `<span class="${gc}">${s.security_score}</span>` +
+                    `<span style="font-size:1rem;color:var(--text-muted)"> / ${s.max_score}</span>` +
+                    `<span class="${gc}" style="margin-left:10px;font-size:1.3rem;">${s.grade}</span>`;
+                $('scoreSub').textContent = `Not: ${s.grade}`;
+                $('scoreDot').style.background = gradeColor(s.grade);
+            } else {
+                $('scoreValue').textContent = 'N/A';
+                $('scoreSub').textContent = ssl?.error || '';
+                $('scoreDot').style.background = 'var(--text-muted)';
+            }
+
+            /* — Card 2: SSL — */
+            if (hasSSL) {
+                const v = ssl.summary;
+                $('sslValue').innerHTML = v.is_valid
+                    ? `<span style="color:var(--green)">Gecerli</span>`
+                    : `<span style="color:var(--red)">Gecersiz</span>`;
+                $('sslSub').textContent = `${v.days_remaining} gun kaldi`;
+                $('sslDot').style.background = v.is_valid ? 'var(--green)' : 'var(--red)';
+            } else {
+                $('sslValue').textContent = 'Hata';
+                $('sslSub').textContent = ssl?.error || '';
+                $('sslDot').style.background = 'var(--red)';
+            }
+
+            /* — Card 3: Issuer — */
+            if (hasSSL) {
+                $('issuerValue').textContent = ssl.summary.issuer_organization;
+                $('issuerSub').textContent   = ssl.summary.issuer_common_name;
+            } else {
+                $('issuerValue').textContent = 'N/A';
+                $('issuerSub').textContent   = '';
+            }
+
+            /* — Card 4: Headers count — */
+            if (hasHdrs) {
+                const parts = hdrs.summary.headers_present.split('/');
+                const present = parseInt(parts[0]);
+                const total   = parseInt(parts[1]);
+                $('headersValue').textContent = hdrs.summary.headers_present;
+                $('headersSub').textContent   = present === total ? 'Tumu mevcut!' : `${total - present} baslik eksik`;
+                $('headerDot').style.background = present === total ? 'var(--green)' : 'var(--yellow)';
+            }
+
+            /* — Tab 1: Header table — */
+            if (hasHdrs) {
+                const tbody = $('headersBody');
+                tbody.innerHTML = '';
+                hdrs.header_analysis.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="mono">${h.header}</td>
+                        <td><span class="badge ${h.present ? 'badge-ok' : 'badge-fail'}">${h.present ? 'Mevcut' : 'Eksik'}</span></td>
+                        <td class="mono" style="color:${h.present ? 'var(--text-secondary)' : 'var(--text-muted)'}">
+                            ${h.value || '<span style="opacity:.4">—</span>'}
+                        </td>
+                        <td style="color:var(--text-muted)">${h.weight} puan</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            /* — Tab 2: TLS badges + raw JSON — */
+            const badges = $('tlsBadges');
+            badges.innerHTML = '';
+            if (hasSSL) {
+                const c = ssl.connection;
+                const items = [
+                    ['Protokol', c.protocol_version],
+                    ['Cipher',   c.cipher_suite],
+                    ['Bit',      c.cipher_bits],
+                ];
+                items.forEach(([label, val]) => {
+                    if (!val) return;
+                    const el = document.createElement('span');
+                    el.className = 'tls-badge';
+                    el.innerHTML = `${label}: <strong>${val}</strong>`;
+                    badges.appendChild(el);
+                });
+            }
+            $('rawJson').textContent = JSON.stringify(data, null, 2);
+
+            /* show */
+            $('results').classList.add('active');
+        }
+    </script>
+</body>
+</html>
